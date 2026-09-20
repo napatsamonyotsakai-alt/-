@@ -1,0 +1,874 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Physics & Math Studio (Diagram & Canvas Supported)</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- MathJax 3 Config & Script -->
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']],
+                processEscapes: true,
+                processEnvironments: true
+            },
+            options: {
+                ignoreHtmlClass: 'tex2jax_ignore',
+                processHtmlClass: 'tex2jax_process'
+            },
+            startup: {
+                pageReady: () => {
+                    return MathJax.startup.defaultPageReady().then(() => {
+                        console.log('MathJax initial typesetting complete');
+                    });
+                }
+            }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+    <!-- Google Fonts: Sarabun -->
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:ital,wght@0,300;0,400;0,600;0,700;1,400&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            font-family: 'Sarabun', -apple-system, BlinkMacSystemFont, sans-serif;
+            background-color: #f8fafc;
+            color: #334155;
+        }
+
+        .formula-scroll::-webkit-scrollbar,
+        .math-scroll::-webkit-scrollbar {
+            height: 6px;
+            width: 6px;
+        }
+        .formula-scroll::-webkit-scrollbar-thumb,
+        .math-scroll::-webkit-scrollbar-thumb {
+            background-color: #cbd5e1;
+            border-radius: 4px;
+        }
+
+        .modal-backdrop {
+            background: rgba(15, 23, 42, 0.65);
+            backdrop-filter: blur(4px);
+        }
+
+        .vocab-table th, .vocab-table td {
+            padding: 10px 14px;
+            border: 1px solid #e2e8f0;
+        }
+
+        /* Responsive SVG Diagram Container */
+        .physics-diagram-box svg {
+            max-width: 100%;
+            height: auto;
+            margin: 0 auto;
+            display: block;
+        }
+
+        /* Toast notification */
+        #toast {
+            transition: opacity 0.3s ease, transform 0.3s ease;
+        }
+    </style>
+</head>
+<body class="p-3 sm:p-6 tex2jax_process">
+
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed bottom-5 right-5 z-50 transform translate-y-10 opacity-0 pointer-events-none bg-slate-900 text-white px-4 py-3 rounded-xl shadow-xl flex items-center gap-2 text-sm">
+        <span id="toast-icon">✅</span>
+        <span id="toast-msg">คัดลอกสำเร็จ!</span>
+    </div>
+
+    <div class="max-w-6xl mx-auto space-y-6">
+
+        <!-- Header -->
+        <header class="text-center bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+            <h1 class="text-2xl sm:text-3xl font-bold text-slate-800 flex items-center justify-center gap-2">
+                <span>🎨</span> Interactive Physics & Math Studio + Diagram Engine
+            </h1>
+            <p class="text-slate-500 text-sm sm:text-base mt-1">
+                ระบบเรียนรู้ฟิสิกส์ รองรับการวาดภาพ/ไดอะแกรม SVG อัตโนมัติ แสดงผล 2 จุด รองรับ LaTeX สัญลักษณ์ฟิสิกส์ขั้นสูง
+            </p>
+        </header>
+
+        <!-- 1. Original Physics Problem Display -->
+        <div class="bg-amber-50/80 border border-amber-200 p-5 rounded-2xl shadow-sm space-y-4">
+            <div class="flex items-center justify-between border-b border-amber-200 pb-2">
+                <h2 class="text-lg font-bold text-amber-900 flex items-center gap-2">
+                    <span>📋</span> โจทย์ตัวอย่างฟิสิกส์ (Original Problem)
+                </h2>
+                <span class="bg-amber-100 text-amber-800 text-xs px-2.5 py-1 rounded-full font-semibold">ฟิสิกส์ ม.ปลาย</span>
+            </div>
+
+            <!-- Diagram Display #1 (โผล่ครั้งที่ 1: ด้านบนตัวโจทย์) -->
+            <div id="top-diagram-container" class="bg-white p-4 rounded-xl border border-amber-200 shadow-inner physics-diagram-box">
+                <!-- Pre-rendered SVG Diagram for Sample -->
+                <svg viewBox="0 0 600 160" xmlns="http://www.w3.org/2000/svg" class="w-full max-w-xl">
+                    <!-- Ground Line -->
+                    <line x1="20" y1="130" x2="580" y2="130" stroke="#64748b" stroke-width="3" stroke-dasharray="6,4"/>
+                    <rect x="20" y="130" width="560" height="10" fill="#e2e8f0"/>
+                    
+                    <!-- Mass 1 (m1) -->
+                    <rect x="70" y="70" width="60" height="60" fill="#38bdf8" rx="6" stroke="#0284c7" stroke-width="2"/>
+                    <text x="100" y="105" font-family="Sarabun" font-size="14" font-weight="bold" fill="#0369a1" text-anchor="middle">m₁ = 2kg</text>
+                    <!-- Velocity Vector u1 -->
+                    <path d="M 140 85 L 180 85" stroke="#ef4444" stroke-width="3" marker-end="url(#arrow)"/>
+                    <text x="160" y="75" font-family="Sarabun" font-size="12" font-weight="bold" fill="#dc2626" text-anchor="middle">u₁ = 10 m/s</text>
+
+                    <!-- Mass 2 (m2) -->
+                    <rect x="320" y="50" width="80" height="80" fill="#a855f7" rx="6" stroke="#7e22ce" stroke-width="2"/>
+                    <text x="360" y="95" font-family="Sarabun" font-size="14" font-weight="bold" fill="#581c87" text-anchor="middle">m₂ = 5kg</text>
+                    <!-- Velocity Vector u2 -->
+                    <path d="M 410 85 L 440 85" stroke="#ef4444" stroke-width="3" marker-end="url(#arrow)"/>
+                    <text x="425" y="75" font-family="Sarabun" font-size="12" font-weight="bold" fill="#dc2626" text-anchor="middle">u₂ = 3 m/s</text>
+
+                    <!-- Spring Attached on back of m2 -->
+                    <path d="M 320 90 Q 310 80, 300 90 T 280 90 T 260 90 T 240 90 T 220 90" fill="none" stroke="#64748b" stroke-width="3"/>
+                    <text x="270" y="75" font-family="Sarabun" font-size="11" font-weight="bold" fill="#475569" text-anchor="middle">k = 1120 N/m</text>
+
+                    <!-- Markers -->
+                    <defs>
+                        <marker id="arrow" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                            <path d="M 0 0 L 10 5 L 0 10 z" fill="#ef4444"/>
+                        </marker>
+                    </defs>
+                </svg>
+            </div>
+
+            <div class="text-slate-700 text-sm sm:text-base leading-relaxed space-y-2">
+                <p>
+                    วัตถุมวล $m_1 = 2\text{ kg}$ เคลื่อนที่ด้วยความเร็ว $\vec{u}_1 = 10\text{ m/s}$ บนพื้นราบไร้ความเสียดทาน ($\mu = 0$) พุ่งเข้าชนวัตถุมวล $m_2 = 5\text{ kg}$ ซึ่งกำลังเคลื่อนที่ไปทิศทางเดียวกันด้วยความเร็ว $\vec{u}_2 = 3\text{ m/s}$ โดยที่ด้านหลังของมวล $m_2$ มีสปริงติดอยู่ (ค่าคงตัวสปริง $k = 1120\text{ N/m}$)
+                </p>
+                <p class="font-semibold text-amber-950">
+                    <b>คำถาม:</b> จงคำนวณหาระยะหดตัวมากที่สุดของสปริง ($x_{\text{max}}$) ขณะเกิดการชน
+                </p>
+            </div>
+        </div>
+
+        <!-- 2. AI Prompt & Input Controls -->
+        <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 space-y-4">
+            
+            <!-- AI Prompt Generator Box -->
+            <div>
+                <div class="flex items-center justify-between mb-2">
+                    <label class="text-sm font-bold text-slate-700 flex items-center gap-2">
+                        <span>🤖</span> คำสั่งสำหรับ AI (Prompt Generator + Physics Diagram & LaTeX Rules)
+                    </label>
+                    <button onclick="copyPrompt()" class="bg-sky-100 hover:bg-sky-200 text-sky-700 text-xs px-3 py-1.5 rounded-lg font-semibold transition flex items-center gap-1">
+                        <span>📋</span> คัดลอก Prompt
+                    </button>
+                </div>
+                <textarea id="ai-prompt" rows="6" readonly class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm font-mono text-slate-600 focus:outline-none resize-y">ช่วยวิเคราะห์โจทย์ฟิสิกส์/คณิตศาสตร์ แล้วสร้างข้อมูล JSON ตามโครงสร้างดังนี้:
+{
+  "problemText": "ข้อความโจทย์ต้นฉบับ",
+  "diagramHtml": "<svg viewBox='0 0 600 160' ...>โค้ด SVG แสดงภาพประกอบฟิสิกส์</svg>",
+  "academicSummary": "สรุปหลักการเชิงวิชาการของโจทย์และกฎฟิสิกส์ที่ใช้",
+  "wuxiaSummary": "สรุปเนื้อเรื่องเปรียบเทียบสไตล์หนังจีนแนวยุทธภพเพื่อให้เข้าใจง่าย",
+  "formulas": [
+    {
+      "id": "formula-1",
+      "name": "ชื่อสูตร/กฎ",
+      "latex": "v = f\\lambda",
+      "deepExplanation": "คำอธิบายเชิงลึก...",
+      "symbols": [
+        {"symbol": "v", "meaning": "ความเร็วคลื่น", "unit": "m/s"},
+        {"symbol": "\\lambda", "meaning": "ความยาวคลื่น", "unit": "m"}
+      ]
+    }
+  ],
+  "summarySymbols": [
+    {"symbol": "\\lambda", "meaning": "ความยาวคลื่น", "unit": "m"},
+    {"symbol": "f", "meaning": "ความถี่คลื่น", "unit": "Hz"}
+  ],
+  "solutionSteps": [
+    {
+      "stepTitle": "ขั้นตอนที่ 1: หาค่าความยาวคลื่น (\\lambda)",
+      "formulaRefId": "formula-1",
+      "formulaRefName": "ดูสูตรอัตราเร็วคลื่น",
+      "mathStepsLines": [
+        "จากรูป คลื่น 1 ลูกสมบูรณ์ เริ่มจากจุด $x_1 = 11\\text{ cm}$ ถึง $x_2 = 13\\text{ cm}$",
+        "\\lambda = x_2 - x_1",
+        "\\lambda = 13\\text{ cm} - 11\\text{ cm} = 2\\text{ cm}"
+      ],
+      "stepSymbols": [
+        {"symbol": "\\lambda", "meaning": "ความยาวคลื่นที่อ่านได้จากกราฟ"}
+      ]
+    }
+  ]
+}
+
+*ข้อกำหนดเรื่องสัญลักษณ์ LaTeX ใน JSON:*
+1. เมื่อเขียนสัญลักษณ์ LaTeX ในสตริง JSON ให้ใช้ Double Backslash เช่น \\lambda, \\text{cm}, \\times, \\theta
+2. สามารถใส่เครื่องหมาย $ ครอบสัญลักษณ์ LaTeX หรือไม่ใส่ก็ได้ ระบบจะเรนเดอร์ผ่าน MathJax ให้อัตโนมัติ</textarea>
+            </div>
+
+            <!-- JSON Input & Action Buttons -->
+            <div>
+                <label class="block text-sm font-bold text-slate-700 mb-2 flex items-center gap-2">
+                    <span>💻</span> วางโค้ด JSON จาก AI ที่นี่
+                </label>
+                <textarea id="json-input" rows="5" placeholder='วางโค้ด JSON ที่ AI สร้างขึ้นมาตรงนี้...' class="w-full p-3 bg-slate-50 border border-slate-300 rounded-xl text-xs sm:text-sm font-mono text-slate-800 focus:ring-2 focus:ring-sky-400 focus:outline-none resize-y"></textarea>
+                
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3">
+                    <button onclick="renderJSON()" class="w-full bg-sky-500 hover:bg-sky-600 active:scale-[0.99] text-white font-bold py-2.5 px-4 rounded-xl shadow-sm transition flex items-center justify-center gap-2">
+                        <span>⚡</span> แปลงและแสดงผลสื่อการสอน
+                    </button>
+                    <button onclick="clearAllData()" class="w-full bg-rose-100 hover:bg-rose-200 active:scale-[0.99] text-rose-700 font-bold py-2.5 px-4 rounded-xl border border-rose-300 transition flex items-center justify-center gap-2">
+                        <span>🧹</span> ล้างข้อมูลทั้งหมด (Clear All)
+                    </button>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Dynamic Content Output Container -->
+        <div id="content-output" class="space-y-6">
+            
+            <!-- Default Pre-rendered Content -->
+            <!-- 1. Summaries Section -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <!-- Academic Summary -->
+                <div class="bg-amber-50 border border-amber-200 rounded-2xl p-5 shadow-sm">
+                    <h3 class="text-base font-bold text-amber-900 border-b border-amber-200 pb-2 mb-3 flex items-center gap-2">
+                        <span>📌</span> สรุปหลักการสำคัญ (Academic Summary)
+                    </h3>
+                    <p class="text-sm text-slate-700 leading-relaxed">
+                        การปะทะบนพื้นราบลื่นนี้ใช้ <b>กฎการอนุรักษ์โมเมนตัม ($\sum \vec{P}_{\text{ก่อน}} = \sum \vec{P}_{\text{หลัง}}$)</b> และ <b>กฎการอนุรักษ์พลังงาน ($\Delta E_k = E_p$)</b> เมื่อมวลวิ่งเข้าชนสปริง สปริงจะยุบตัวลงเรื่อยๆ จนถึงจุดที่สปริงหดตัวมากที่สุด ทั้งสองมวลจะมีความเร็วร่วมเท่ากัน ($\vec{v}$) พลังงานจลน์ส่วนหนึ่งที่หายไปจากการชนจะถูกเปลี่ยนเป็น <i>พลังงานศักย์ยืดหยุ่น ($E_p = \frac{1}{2}kx^2$)</i> สะสมในสปริงทั้งหมด
+                    </p>
+                </div>
+
+                <!-- Wuxia Story Summary -->
+                <div class="bg-purple-50 border border-purple-200 rounded-2xl p-5 shadow-sm">
+                    <h3 class="text-base font-bold text-purple-900 border-b border-purple-200 pb-2 mb-3 flex items-center gap-2">
+                        <span>⚔️</span> สรุปเนื้อเรื่องสไตล์หนังจีนแนวยุทธภพ
+                    </h3>
+                    <p class="text-sm text-purple-950 leading-relaxed">
+                        <b>ยามลมปราณปะทะ:</b> จอมยุทธ์มวลเบาเคลื่อนกายด้วยลมปราณ $\vec{u}_1$ พุ่งเข้าปะทะจอมยุทธ์มวลหนักด้านหน้าที่มีค่ายกลสปริงตั้งรับ ค่ายกลสปริงรองรับกระแทก ยามที่สปริงหดลงถึงขีดสุด จอมยุทธ์ทั้งสองโดนพันธนาการให้เคลื่อนกายไปพร้อมกันด้วยความเร็วเท่ากัน ($\vec{v}$) พลังลมปราณการเคลื่อนที่ที่ลดหายไป ถูกผนึกอัดแน่นเปลี่ยนเป็น <b>"พลังลมปราณสะสมซ่อนเร้น" (พลังงานศักย์ยืดหยุ่น)</b> ตรึงสปริงให้หดเกร็งถึงระยะสูงสุด ($x$)!
+                    </p>
+                </div>
+            </div>
+
+            <!-- 2. Formulas with Deep Explanations Section -->
+            <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-4">
+                <h3 class="text-lg font-bold text-slate-800 border-b border-slate-100 pb-3 flex items-center gap-2">
+                    <span>📐</span> 1. สูตรที่ต้องใช้ และ การอธิบายสูตรเชิงลึก
+                </h3>
+
+                <!-- Formula 1 Container -->
+                <div id="formula-card-1" class="bg-slate-50 border border-slate-200 rounded-xl p-4 grid grid-cols-1 md:grid-cols-12 gap-4 relative">
+                    <div class="md:col-span-8 space-y-3">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-bold bg-sky-100 text-sky-800 px-2.5 py-1 rounded-md">สูตรที่ 1: กฎอนุรักษ์โมเมนตัม</span>
+                            <button onclick="openFormulaModalById('formula-1')" class="text-xs bg-slate-200 hover:bg-slate-300 text-slate-700 px-2.5 py-1 rounded-lg font-semibold transition flex items-center gap-1">
+                                <span>🔍</span> ขยายดู Pop-up
+                            </button>
+                        </div>
+                        
+                        <div class="bg-white border border-slate-200 p-3 rounded-lg overflow-x-auto text-center font-bold text-slate-800 formula-scroll">
+                            $$\sum \vec{P}_{\text{ก่อนชน}} = \sum \vec{P}_{\text{หลังชน}} \quad \Rightarrow \quad m_1 \vec{u}_1 + m_2 \vec{u}_2 = (m_1 + m_2) \vec{v}$$
+                        </div>
+                        
+                        <div class="text-xs sm:text-sm text-slate-600 bg-sky-50/60 border-l-4 border-sky-400 p-2.5 rounded-r-lg">
+                            <b>คำอธิบายสูตรเชิงลึก:</b> เป็นผลจากกฎการอนุรักษ์โมเมนตัม เมื่อระบบไม่มีแรงภายนอกมากระทำ ผลรวมโมเมนตัมก่อนชนเท่ากับหลังชน สำหรับกรณีสปริงหดตัวมากที่สุด วัตถุทั้งสองจะเคลื่อนที่ไปด้วยกัน ประหนึ่งเป็นเนื้อเดียวกัน จึงใช้ความเร็วร่วมเป็น $\vec{v}$
+                        </div>
+                    </div>
+
+                    <div class="md:col-span-4 bg-sky-50/40 border border-sky-100 rounded-lg p-3 text-xs space-y-1.5 text-slate-600">
+                        <div class="font-bold text-sky-800 border-b border-sky-200 pb-1 mb-1">🔤 ตัวย่อประจำสูตรนี้:</div>
+                        <div>• $m_1, m_2$ : มวลของวัตถุก้อนที่ 1 และ 2 ($\text{kg}$)</div>
+                        <div>• $\vec{u}_1, \vec{u}_2$ : เวกเตอร์ความเร็วก่อนชน ($\text{m/s}$)</div>
+                        <div>• $\vec{v}$ : เวกเตอร์ความเร็วร่วมขณะสปริงหดมากที่สุด ($\text{m/s}$)</div>
+                    </div>
+                </div>
+
+                <!-- Formula 2 Container -->
+                <div id="formula-card-2" class="bg-slate-50 border border-slate-200 rounded-xl p-4 grid grid-cols-1 md:grid-cols-12 gap-4 relative">
+                    <div class="md:col-span-8 space-y-3">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-bold bg-sky-100 text-sky-800 px-2.5 py-1 rounded-md">สูตรที่ 2: พลังงานจลน์และพลังงานศักย์สปริง</span>
+                            <button onclick="openFormulaModalById('formula-2')" class="text-xs bg-slate-200 hover:bg-slate-300 text-slate-700 px-2.5 py-1 rounded-lg font-semibold transition flex items-center gap-1">
+                                <span>🔍</span> ขยายดู Pop-up
+                            </button>
+                        </div>
+                        
+                        <div class="bg-white border border-slate-200 p-3 rounded-lg overflow-x-auto text-center font-bold text-slate-800 formula-scroll">
+                            $$\Delta E_k = E_{k,\text{ก่อน}} - E_{k,\text{หลัง}} \quad \Rightarrow \quad \Delta E_k = \frac{1}{2}m_1 u_1^2 + \frac{1}{2}m_2 u_2^2 - \frac{1}{2}(m_1 + m_2)v^2$$
+                            $$E_p = \frac{1}{2}k x^2$$
+                        </div>
+                        
+                        <div class="text-xs sm:text-sm text-slate-600 bg-sky-50/60 border-l-4 border-sky-400 p-2.5 rounded-r-lg">
+                            <b>คำอธิบายสูตรเชิงลึก:</b> พลังงานจลน์รวมก่อนชนมีค่ามากกว่าพลังงานจลน์รวมขณะหดมากที่สุด ผลต่างพลังงานจลน์ที่ลดลง ($\Delta E_k$) นี้ ไม่ได้หายไปไหน แต่ถูกนำไปเปลี่ยนรูปเป็นพลังงานศักย์ยืดหยุ่นสะสมอยู่ในสปริง ($E_p$) ทำให้ $\Delta E_k = \frac{1}{2}kx^2$
+                        </div>
+                    </div>
+
+                    <div class="md:col-span-4 bg-sky-50/40 border border-sky-100 rounded-lg p-3 text-xs space-y-1.5 text-slate-600">
+                        <div class="font-bold text-sky-800 border-b border-sky-200 pb-1 mb-1">🔤 ตัวย่อประจำสูตรนี้:</div>
+                        <div>• $\Delta E_k$ : พลังงานจลน์ที่ลดลง ($\text{J}$)</div>
+                        <div>• $E_p$ : พลังงานศักย์ยืดหยุ่นสปริง ($\text{J}$)</div>
+                        <div>• $k$ : ค่าคงตัวสปริง ($\text{N/m}$)</div>
+                        <div>• $x$ : ระยะหดตัวสูงสุดของสปริง ($\text{m}$)</div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- 3. Summary Symbols Table -->
+            <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
+                <h3 class="text-lg font-bold text-slate-800 border-b border-slate-100 pb-3 mb-3 flex items-center gap-2">
+                    <span>🔤</span> 2. สรุปตัวย่อและสัญลักษณ์ทั้งหมดในโจทย์
+                </h3>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-sm vocab-table">
+                        <thead class="bg-slate-50 text-slate-600 font-semibold">
+                            <tr>
+                                <th class="w-1/4">ตัวย่อ / สัญลักษณ์</th>
+                                <th>ความหมาย / ชื่อเรียก</th>
+                                <th class="w-1/4">หน่วยในระบบ SI</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100 text-slate-700">
+                            <tr><td>$m_1, m_2$</td><td>มวลของวัตถุก้อนแรก ($2\text{ kg}$) และก้อนที่สอง ($5\text{ kg}$)</td><td>$\text{kg}$ (กิโลกรัม)</td></tr>
+                            <tr><td>$\vec{u}_1, \vec{u}_2$</td><td>ความเร็วต้นก่อนชน ($10\text{ m/s}$ และ $3\text{ m/s}$)</td><td>$\text{m/s}$ (เมตรต่อวินาที)</td></tr>
+                            <tr><td>$\vec{v}$</td><td>ความเร็วร่วมของมวลทั้งสองขณะสปริงหดมากที่สุด</td><td>$\text{m/s}$ (เมตรต่อวินาที)</td></tr>
+                            <tr><td>$\Delta E_k$</td><td>พลังงานจลน์ที่สูญหายจากการชน / เปลี่ยนไปเป็นพลังงานสปริง</td><td>$\text{J}$ (จูล)</td></tr>
+                            <tr><td>$k$</td><td>ค่าคงตัวของสปริง ($1120\text{ N/m}$)</td><td>$\text{N/m}$ (นิวตันต่อเมตร)</td></tr>
+                            <tr><td>$x_{\text{max}}$</td><td>ระยะหดตัวมากที่สุดของสปริง</td><td>$\text{m}$ (เมตร)</td></tr>
+                            <tr><td>$\mu$</td><td>สัมประสิทธิ์ความเสียดทานบนพื้น ($\mu = 0$ พื้นลื่น)</td><td>- (ไม่มีหน่วย)</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- 4. Step-by-Step Solution with Diagram Display #2 -->
+            <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-4">
+                <h3 class="text-lg font-bold text-slate-800 border-b border-slate-100 pb-3 flex items-center gap-2">
+                    <span>💡</span> 3. ขั้นตอนการแก้โจทย์อย่างละเอียด (Step-by-Step)
+                </h3>
+
+                <!-- Diagram Display #2 (โผล่ครั้งที่ 2: เหนือกล่องขั้นตอนการแก้โจทย์) -->
+                <div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
+                    <div class="text-xs font-bold text-slate-500 mb-2 flex items-center gap-1">
+                        <span>🖼️</span> ภาพประกอบสภาวะขณะเกิดการชน (Physics Diagram Reference):
+                    </div>
+                    <div id="step-diagram-container" class="physics-diagram-box">
+                        <!-- Cloned dynamically -->
+                    </div>
+                </div>
+
+                <!-- Step 1 Box -->
+                <div class="bg-emerald-50/70 border border-emerald-200 rounded-xl p-4 grid grid-cols-1 md:grid-cols-12 gap-4">
+                    <div class="md:col-span-8 space-y-2">
+                        <div class="flex items-center justify-between flex-wrap gap-2">
+                            <span class="font-bold text-emerald-900 text-base">ขั้นตอนที่ 1: หาความเร็วร่วม ($\vec{v}$) ขณะสปริงหดตัวมากที่สุด</span>
+                            <button onclick="openFormulaModalById('formula-1')" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs px-2.5 py-1 rounded-lg font-semibold transition flex items-center gap-1 shadow-sm">
+                                <span>🔗</span> ดูสูตรที่ 1 (กฎอนุรักษ์โมเมนตัม)
+                            </button>
+                        </div>
+
+                        <div class="text-sm text-slate-800 space-y-1.5 font-sans leading-relaxed pt-1">
+                            <p>• จากกฎการอนุรักษ์โมเมนตัม: $\sum \vec{P}_{\text{ก่อนชน}} = \sum \vec{P}_{\text{หลังชน}}$</p>
+                            <p>• แทนค่าตามสมการมวลและความเร็ว: $m_1 \vec{u}_1 + m_2 \vec{u}_2 = (m_1 + m_2) \vec{v}$</p>
+                            <p>• แทนค่าตัวเลขลงในสูตร: $(2)(10) + (5)(3) = (2 + 5)v$</p>
+                            <p>• คำนวณผลรวมโมเมนตัม: $20 + 15 = 7v \quad \Rightarrow \quad 35 = 7v$</p>
+                            <p class="font-bold text-emerald-800 bg-white/80 p-2 rounded-lg border border-emerald-200 inline-block">
+                                $\Rightarrow \quad v = \frac{35}{7} = 5 \text{ m/s}$
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="md:col-span-4 bg-white/80 border border-emerald-200 rounded-lg p-3 text-xs space-y-1 text-emerald-950">
+                        <div class="font-bold text-emerald-800 border-b border-emerald-200 pb-1 mb-1">🔤 ตัวย่อที่ใช้ในขั้นนี้:</div>
+                        <div>• $m_1, m_2$ : มวล $2\text{ kg}$ และ $5\text{ kg}$</div>
+                        <div>• $\vec{u}_1, \vec{u}_2$ : ความเร็วต้น $10\text{ m/s}$ และ $3\text{ m/s}$</div>
+                        <div>• $\vec{v}$ : ความเร็วร่วม ($5\text{ m/s}$)</div>
+                    </div>
+                </div>
+
+                <!-- Step 2 Box -->
+                <div class="bg-emerald-50/70 border border-emerald-200 rounded-xl p-4 grid grid-cols-1 md:grid-cols-12 gap-4">
+                    <div class="md:col-span-8 space-y-2">
+                        <div class="flex items-center justify-between flex-wrap gap-2">
+                            <span class="font-bold text-emerald-900 text-base">ขั้นตอนที่ 2: คำนวณหาพลังงานจลน์ที่สูญหายไป ($\Delta E_k$)</span>
+                            <button onclick="openFormulaModalById('formula-2')" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs px-2.5 py-1 rounded-lg font-semibold transition flex items-center gap-1 shadow-sm">
+                                <span>🔗</span> ดูสูตรที่ 2 (พลังงาน)
+                            </button>
+                        </div>
+
+                        <div class="text-sm text-slate-800 space-y-1.5 font-sans leading-relaxed pt-1">
+                            <p>• คำนวณผลต่างพลังงานจลน์: $\Delta E_k = E_{k,\text{ก่อน}} - E_{k,\text{หลัง}}$</p>
+                            <p>• เขียนสมการพลังงานเต็ม: $\Delta E_k = \left(\frac{1}{2}m_1 u_1^2 + \frac{1}{2}m_2 u_2^2\right) - \frac{1}{2}(m_1 + m_2)v^2$</p>
+                            <p>• แทนค่าตัวเลขลงในสมการ: $\Delta E_k = \left(\frac{1}{2}(2)(10)^2 + \frac{1}{2}(5)(3)^2\right) - \frac{1}{2}(2 + 5)(5)^2$</p>
+                            <p>• คิดคำนวณแต่ละส่วน: $\Delta E_k = (100 + 22.5) - \frac{1}{2}(7)(25) = 122.5 - 87.5$</p>
+                            <p class="font-bold text-emerald-800 bg-white/80 p-2 rounded-lg border border-emerald-200 inline-block">
+                                $\Rightarrow \quad \Delta E_k = 35 \text{ J}$
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="md:col-span-4 bg-white/80 border border-emerald-200 rounded-lg p-3 text-xs space-y-1 text-emerald-950">
+                        <div class="font-bold text-emerald-800 border-b border-emerald-200 pb-1 mb-1">🔤 ตัวย่อที่ใช้ในขั้นนี้:</div>
+                        <div>• $\Delta E_k$ : พลังงานจลน์ที่เปลี่ยนไป ($35\text{ J}$)</div>
+                        <div>• $E_{k,\text{ก่อน}}$ : พลังงานจลน์รวมก่อนชน ($122.5\text{ J}$)</div>
+                        <div>• $E_{k,\text{หลัง}}$ : พลังงานจลน์รวมหลังชน ($87.5\text{ J}$)</div>
+                    </div>
+                </div>
+
+                <!-- Step 3 Box -->
+                <div class="bg-emerald-50/70 border border-emerald-200 rounded-xl p-4 grid grid-cols-1 md:grid-cols-12 gap-4">
+                    <div class="md:col-span-8 space-y-2">
+                        <div class="flex items-center justify-between flex-wrap gap-2">
+                            <span class="font-bold text-emerald-900 text-base">ขั้นตอนที่ 3: คำนวณหาระยะหดตัวมากที่สุดของสปริง ($x_{\text{max}}$)</span>
+                            <button onclick="openFormulaModalById('formula-2')" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs px-2.5 py-1 rounded-lg font-semibold transition flex items-center gap-1 shadow-sm">
+                                <span>🔗</span> ดูสูตรที่ 2 (พลังงานศักย์สปริง)
+                            </button>
+                        </div>
+
+                        <div class="text-sm text-slate-800 space-y-1.5 font-sans leading-relaxed pt-1">
+                            <p>• เปลี่ยนพลังงานจลน์เป็นพลังงานศักย์สปริง: $\Delta E_k = E_p = \frac{1}{2} k x^2$</p>
+                            <p>• แทนค่าพลังงาน $\Delta E_k = 35\text{ J}$ และค่าคงตัวสปริง $k = 1120\text{ N/m}$:</p>
+                            <p>• $35 = \frac{1}{2}(1120) x^2 \quad \Rightarrow \quad 35 = 560 x^2$</p>
+                            <p>• ย้ายข้างหาค่า $x^2$: $x^2 = \frac{35}{560} = \frac{1}{16} = 0.0625$</p>
+                            <p class="font-bold text-emerald-800 bg-white/80 p-2 rounded-lg border border-emerald-200 inline-block">
+                                $\Rightarrow \quad x_{\text{max}} = \sqrt{0.0625} = 0.25 \text{ m} \quad \text{(หรือ } 25 \text{ cm)}$
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="md:col-span-4 bg-white/80 border border-emerald-200 rounded-lg p-3 text-xs space-y-1 text-emerald-950">
+                        <div class="font-bold text-emerald-800 border-b border-emerald-200 pb-1 mb-1">🔤 ตัวย่อที่ใช้ในขั้นนี้:</div>
+                        <div>• $k$ : ค่าคงตัวสปริง ($1120\text{ N/m}$)</div>
+                        <div>• $x_{\text{max}}$ : ระยะหดตัวมากที่สุด ($0.25\text{ m}$)</div>
+                    </div>
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <!-- Formula Modal Pop-up -->
+    <div id="formula-modal" class="fixed inset-0 z-50 hidden modal-backdrop items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6 relative animate-in fade-in zoom-in duration-200">
+            <button onclick="closeModal()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 text-2xl font-bold w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-100 transition">
+                &times;
+            </button>
+
+            <div class="border-b border-slate-100 pb-3 mb-4">
+                <span class="text-xs font-bold bg-sky-100 text-sky-800 px-2.5 py-1 rounded-md">รายละเอียดสูตรเชิงลึก</span>
+                <h3 id="modal-formula-title" class="text-lg font-bold text-slate-800 mt-1">
+                    สูตรกฎการอนุรักษ์โมเมนตัม
+                </h3>
+            </div>
+
+            <div id="modal-body-content" class="space-y-4">
+                <!-- Dynamic Content injected via JS -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Init pre-rendered diagram clone for Step 2
+        window.addEventListener('DOMContentLoaded', () => {
+            syncDiagrams();
+            triggerMathJax();
+        });
+
+        function syncDiagrams() {
+            const topDiagram = document.getElementById('top-diagram-container');
+            const stepDiagram = document.getElementById('step-diagram-container');
+            if (topDiagram && stepDiagram && topDiagram.children.length > 0) {
+                stepDiagram.innerHTML = topDiagram.innerHTML;
+            }
+        }
+
+        function showToast(msg, isError = false) {
+            const toast = document.getElementById('toast');
+            const toastMsg = document.getElementById('toast-msg');
+            const toastIcon = document.getElementById('toast-icon');
+            
+            toastMsg.innerText = msg;
+            toastIcon.innerText = isError ? '❌' : '✅';
+            toast.className = `fixed bottom-5 right-5 z-50 transform transition-all duration-300 px-4 py-3 rounded-xl shadow-xl flex items-center gap-2 text-sm ${isError ? 'bg-rose-900 text-white' : 'bg-slate-900 text-white'}`;
+            
+            toast.classList.remove('translate-y-10', 'opacity-0', 'pointer-events-none');
+            setTimeout(() => {
+                toast.classList.add('translate-y-10', 'opacity-0', 'pointer-events-none');
+            }, 3000);
+        }
+
+        // Global Formulas Memory
+        let globalFormulasMap = {
+            'formula-1': {
+                name: "กฎการอนุรักษ์โมเมนตัม",
+                latex: "\\sum \\vec{P}_{\\text{ก่อนชน}} = \\sum \\vec{P}_{\\text{หลังชน}} \\quad \\Rightarrow \\quad m_1 \\vec{u}_1 + m_2 \\vec{u}_2 = (m_1 + m_2) \\vec{v}",
+                deepExplanation: "มาจากกฎการอนุรักษ์โมเมนตัม เมื่อระบบไม่มีแรงภายนอกมากระทำ ผลรวมโมเมนตัมก่อนชนจะเท่ากับหลังชน โดยในการชนที่สปริงหดมากที่สุด วัตถุทั้งสองจะมีความเร็วร่วมเท่ากัน (v)",
+                symbols: [
+                    {symbol: "m_1, m_2", meaning: "มวลของวัตถุก้อนที่ 1 และ 2", unit: "kg"},
+                    {symbol: "\\vec{u}_1, \\vec{u}_2", meaning: "ความเร็วของวัตถุก่อนชน", unit: "m/s"},
+                    {symbol: "\\vec{v}", meaning: "ความเร็วร่วมหลังชนขณะสปริงหดมากที่สุด", unit: "m/s"}
+                ]
+            },
+            'formula-2': {
+                name: "พลังงานจลน์และพลังงานศักย์ยืดหยุ่นสปริง",
+                latex: "\\Delta E_k = E_{k,\\text{ก่อน}} - E_{k,\\text{หลัง}} \\quad \\Rightarrow \\quad \\Delta E_k = \\frac{1}{2}m_1 u_1^2 + \\frac{1}{2}m_2 u_2^2 - \\frac{1}{2}(m_1 + m_2)v^2 \\\\ E_p = \\frac{1}{2}k x^2",
+                deepExplanation: "พลังงานจลน์รวมก่อนชนมีค่ามากกว่าพลังงานจลน์รวมขณะหดมากที่สุด ผลต่างพลังงานจลน์ที่ลดลง (ΔEk) นี้ ไม่ได้หายไปไหน แต่ถูกนำไปเปลี่ยนรูปเป็นพลังงานศักย์ยืดหยุ่นสะสมอยู่ในสปริง (Ep) ทำให้ ΔEk = (1/2)k x^2",
+                symbols: [
+                    {symbol: "\\Delta E_k", meaning: "พลังงานจลน์ที่ลดลง", unit: "J"},
+                    {symbol: "E_p", meaning: "พลังงานศักย์ยืดหยุ่นสปริง", unit: "J"},
+                    {symbol: "k", meaning: "ค่าคงตัวสปริง", unit: "N/m"},
+                    {symbol: "x_{\\text{max}}", meaning: "ระยะหดตัวสูงสุดของสปริง", unit: "m"}
+                ]
+            }
+        };
+
+        // Utility to trigger MathJax reprocessing
+        function triggerMathJax(elements) {
+            if (window.MathJax) {
+                if (window.MathJax.typesetPromise) {
+                    window.MathJax.typesetPromise(elements).catch((err) => console.error('MathJax typeset failed:', err));
+                } else if (window.MathJax.Hub && window.MathJax.Hub.Queue) {
+                    window.MathJax.Hub.Queue(["Typeset", window.MathJax.Hub, elements]);
+                }
+            }
+        }
+
+        // Standardize LaTeX formatting
+        function cleanLatex(str) {
+            if (!str) return '';
+            let cleaned = String(str).trim();
+            cleaned = cleaned.replace(/^\$+|\$+$/g, '').trim();
+            return cleaned;
+        }
+
+        // Format math text automatically Wrapping raw LaTeX commands with math delimiters $...$
+        function formatMathText(text) {
+            if (!text) return '';
+            let str = String(text);
+
+            // If string contains LaTeX commands (e.g. \lambda, \text, \times) but isn't wrapped in $...$
+            if (/\\[a-zA-Z]+/.test(str) && !str.includes('$')) {
+                // If the entire text looks like a formula (starts with a latex symbol or equation)
+                if (/^(\\[a-zA-Z]+|[a-zA-Z0-9_\-\s\=\+\-\*\/\(\)]+)=/.test(str) || /^\\(lambda|theta|mu|omega|rho|pi|alpha|beta|vec|text|frac|sqrt|sum)/.test(str)) {
+                    return `$${str}$`;
+                }
+                
+                // Wrap isolated LaTeX patterns like \lambda or \text{cm} with $
+                str = str.replace(/(\\[a-zA-Z]+(\{[^{}]*\}|_[a-zA-Z0-9]+|\^[a-zA-Z0-9]+)*)/g, '$$1$');
+            }
+            return str;
+        }
+
+        function copyPrompt() {
+            const promptArea = document.getElementById('ai-prompt');
+            const textToCopy = promptArea.value;
+
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(textToCopy).then(() => {
+                    showToast('คัดลอก AI Prompt เรียบร้อยแล้ว!');
+                }).catch(() => {
+                    fallbackCopy(promptArea);
+                });
+            } else {
+                fallbackCopy(promptArea);
+            }
+        }
+
+        function fallbackCopy(textarea) {
+            try {
+                textarea.select();
+                textarea.setSelectionRange(0, 99999);
+                document.execCommand('copy');
+                showToast('คัดลอก AI Prompt เรียบร้อยแล้ว!');
+            } catch (err) {
+                showToast('ไม่สามารถคัดลอกได้ กรุณาคลุมดำคัดลอกด้วยตนเอง', true);
+            }
+        }
+
+        function clearAllData() {
+            document.getElementById('json-input').value = '';
+            document.getElementById('content-output').innerHTML = `
+                <div class="text-center py-12 bg-white rounded-2xl border border-dashed border-slate-300 text-slate-400">
+                    <p class="text-lg font-semibold">🧹 ล้างข้อมูลเรียบร้อยแล้ว</p>
+                    <p class="text-sm mt-1">กรุณาวางโค้ด JSON ใหม่แล้วกดปุ่ม "แปลงและแสดงผลสื่อการสอน"</p>
+                </div>
+            `;
+            document.getElementById('top-diagram-container').innerHTML = `<div class="text-center text-slate-400 text-xs py-4">ยังไม่มีไดอะแกรมรูปภาพ</div>`;
+            showToast('ล้างข้อมูลเรียบร้อย');
+        }
+
+        function openFormulaModalById(formulaId) {
+            const formula = globalFormulasMap[formulaId];
+            if (!formula) {
+                showToast('ไม่พบสูตรที่อ้างอิง: ' + formulaId, true);
+                return;
+            }
+
+            document.getElementById('modal-formula-title').innerText = formula.name || 'รายละเอียดสูตร';
+
+            let symbolsHtml = '';
+            if (formula.symbols && formula.symbols.length > 0) {
+                formula.symbols.forEach(s => {
+                    symbolsHtml += `<div class="text-xs text-slate-600">• $${cleanLatex(s.symbol)}$ : ${s.meaning} (${s.unit ? formatMathText(s.unit) : '-'})</div>`;
+                });
+            }
+
+            const modalBody = document.getElementById('modal-body-content');
+            modalBody.innerHTML = `
+                <div class="bg-slate-50 border border-slate-200 p-4 rounded-xl text-center font-bold text-slate-800 text-base sm:text-lg overflow-x-auto formula-scroll">
+                    $$${cleanLatex(formula.latex)}$$
+                </div>
+                
+                <div class="bg-sky-50 border-l-4 border-sky-500 p-3 rounded-r-xl text-xs sm:text-sm text-sky-950">
+                    <p class="font-bold text-sky-900 mb-1">📘 คำอธิบายเชิงลึกและการนำไปใช้:</p>
+                    <p class="leading-relaxed">${formula.deepExplanation || 'ไม่มีคำอธิบายเพิ่มเติม'}</p>
+                </div>
+
+                <div class="bg-slate-50 border border-slate-200 p-3 rounded-xl space-y-1">
+                    <div class="font-bold text-xs text-slate-700 border-b border-slate-200 pb-1 mb-1">🔤 สัญลักษณ์ในสูตรนี้:</div>
+                    ${symbolsHtml || '<div class="text-xs text-slate-400">ไม่มีข้อมูลตัวย่อ</div>'}
+                </div>
+            `;
+
+            const modal = document.getElementById('formula-modal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+
+            triggerMathJax([modalBody]);
+        }
+
+        function closeModal() {
+            const modal = document.getElementById('formula-modal');
+            modal.classList.remove('flex');
+            modal.classList.add('hidden');
+        }
+
+        // Render Dynamic JSON Data with complete LaTeX auto-correction & MathJax execution
+        function renderJSON() {
+            let jsonStr = document.getElementById('json-input').value.trim();
+            if (!jsonStr) {
+                showToast('กรุณาวางโค้ด JSON ก่อนครับ', true);
+                return;
+            }
+
+            // Remove codeblock markdown wraps if present
+            if (jsonStr.startsWith('```json')) {
+                jsonStr = jsonStr.replace(/^```json\s*/, '').replace(/\s*```$/, '');
+            } else if (jsonStr.startsWith('```')) {
+                jsonStr = jsonStr.replace(/^```\s*/, '').replace(/\s*```$/, '');
+            }
+
+            try {
+                const data = JSON.parse(jsonStr);
+                const output = document.getElementById('content-output');
+                let html = '';
+
+                // Reset Formula Map
+                globalFormulasMap = {};
+
+                // Update Diagram #1 (โผล่ครั้งที่ 1: กล่องโจทย์)
+                if (data.diagramHtml) {
+                    document.getElementById('top-diagram-container').innerHTML = data.diagramHtml;
+                }
+
+                // Update Problem Text if present
+                if (data.problemText) {
+                    const probEl = document.querySelector('.text-slate-700.text-sm.sm\\:text-base');
+                    if (probEl) {
+                        probEl.innerHTML = `<p>${formatMathText(data.problemText)}</p>`;
+                    }
+                }
+
+                // 1. Summaries Section
+                if (data.academicSummary || data.wuxiaSummary) {
+                    html += `<div class="grid grid-cols-1 md:grid-cols-2 gap-5">`;
+                    if (data.academicSummary) {
+                        html += `
+                            <div class="bg-amber-50 border border-amber-200 rounded-2xl p-5 shadow-sm">
+                                <h3 class="text-base font-bold text-amber-900 border-b border-amber-200 pb-2 mb-3 flex items-center gap-2">
+                                    <span>📌</span> สรุปหลักการสำคัญ (Academic Summary)
+                                </h3>
+                                <p class="text-sm text-slate-700 leading-relaxed">${formatMathText(data.academicSummary)}</p>
+                            </div>
+                        `;
+                    }
+                    if (data.wuxiaSummary) {
+                        html += `
+                            <div class="bg-purple-50 border border-purple-200 rounded-2xl p-5 shadow-sm">
+                                <h3 class="text-base font-bold text-purple-900 border-b border-purple-200 pb-2 mb-3 flex items-center gap-2">
+                                    <span>⚔️</span> สรุปเนื้อเรื่องสไตล์หนังจีนแนวยุทธภพ
+                                </h3>
+                                <p class="text-sm text-purple-950 leading-relaxed">${formatMathText(data.wuxiaSummary)}</p>
+                            </div>
+                        `;
+                    }
+                    html += `</div>`;
+                }
+
+                // 2. Formulas Section
+                if (data.formulas && data.formulas.length > 0) {
+                    html += `
+                        <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-4">
+                            <h3 class="text-lg font-bold text-slate-800 border-b border-slate-100 pb-3 flex items-center gap-2">
+                                <span>📐</span> 1. สูตรที่ต้องใช้ และ การอธิบายสูตรเชิงลึก
+                            </h3>
+                    `;
+
+                    data.formulas.forEach((f, idx) => {
+                        const fId = f.id || `formula-${idx+1}`;
+                        globalFormulasMap[fId] = f;
+
+                        let symList = '';
+                        if (f.symbols && f.symbols.length > 0) {
+                            f.symbols.forEach(s => {
+                                symList += `<div>• $${cleanLatex(s.symbol)}$ : ${s.meaning} (${s.unit ? formatMathText(s.unit) : '-'})</div>`;
+                            });
+                        }
+
+                        html += `
+                            <div id="card-${fId}" class="bg-slate-50 border border-slate-200 rounded-xl p-4 grid grid-cols-1 md:grid-cols-12 gap-4 relative">
+                                <div class="md:col-span-8 space-y-3">
+                                    <div class="flex items-center justify-between">
+                                        <span class="text-xs font-bold bg-sky-100 text-sky-800 px-2.5 py-1 rounded-md">${f.name || `สูตรที่ ${idx+1}`}</span>
+                                        <button onclick="openFormulaModalById('${fId}')" class="text-xs bg-slate-200 hover:bg-slate-300 text-slate-700 px-2.5 py-1 rounded-lg font-semibold transition flex items-center gap-1">
+                                            <span>🔍</span> ขยายดู Pop-up
+                                        </button>
+                                    </div>
+                                    <div class="bg-white border border-slate-200 p-3 rounded-lg overflow-x-auto text-center font-bold text-slate-800 formula-scroll">
+                                        $$${cleanLatex(f.latex)}$$
+                                    </div>
+                                    <div class="text-xs sm:text-sm text-slate-600 bg-sky-50/60 border-l-4 border-sky-400 p-2.5 rounded-r-lg">
+                                        <b>คำอธิบายสูตรเชิงลึก:</b> ${formatMathText(f.deepExplanation || '-')}
+                                    </div>
+                                </div>
+                                <div class="md:col-span-4 bg-sky-50/40 border border-sky-100 rounded-lg p-3 text-xs space-y-1.5 text-slate-600">
+                                    <div class="font-bold text-sky-800 border-b border-sky-200 pb-1 mb-1">🔤 ตัวย่อประจำสูตรนี้:</div>
+                                    ${symList || '<div>ไม่มีข้อมูลตัวย่อ</div>'}
+                                </div>
+                            </div>
+                        `;
+                    });
+
+                    html += `</div>`;
+                }
+
+                // 3. Summary Symbols Table
+                if (data.summarySymbols && data.summarySymbols.length > 0) {
+                    html += `
+                        <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
+                            <h3 class="text-lg font-bold text-slate-800 border-b border-slate-100 pb-3 mb-3 flex items-center gap-2">
+                                <span>🔤</span> 2. สรุปตัวย่อและสัญลักษณ์ทั้งหมดในโจทย์
+                            </h3>
+                            <div class="overflow-x-auto">
+                                <table class="w-full text-left text-sm vocab-table">
+                                    <thead class="bg-slate-50 text-slate-600 font-semibold">
+                                        <tr>
+                                            <th class="w-1/4">ตัวย่อ / สัญลักษณ์</th>
+                                            <th>ความหมาย / ชื่อเรียก</th>
+                                            <th class="w-1/4">หน่วยในระบบ SI</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-slate-100 text-slate-700">
+                    `;
+                    data.summarySymbols.forEach(s => {
+                        html += `
+                            <tr>
+                                <td>$${cleanLatex(s.symbol)}$</td>
+                                <td>${formatMathText(s.meaning)}</td>
+                                <td>${s.unit ? formatMathText(s.unit) : '-'}</td>
+                            </tr>
+                        `;
+                    });
+                    html += `</tbody></table></div></div>`;
+                }
+
+                // 4. Step-by-Step Solution Steps with Diagram #2 (โผล่ครั้งที่ 2: เหนือส่วนวิธีทำ)
+                if (data.solutionSteps && data.solutionSteps.length > 0) {
+                    html += `
+                        <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-4">
+                            <h3 class="text-lg font-bold text-slate-800 border-b border-slate-100 pb-3 flex items-center gap-2">
+                                <span>💡</span> 3. ขั้นตอนการแก้โจทย์อย่างละเอียด (Step-by-Step)
+                            </h3>
+                    `;
+
+                    if (data.diagramHtml) {
+                        html += `
+                            <div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
+                                <div class="text-xs font-bold text-slate-500 mb-2 flex items-center gap-1">
+                                    <span>🖼️</span> ภาพประกอบสภาวะขณะเกิดการชน (Physics Diagram Reference):
+                                </div>
+                                <div class="physics-diagram-box">
+                                    ${data.diagramHtml}
+                                </div>
+                            </div>
+                        `;
+                    }
+
+                    data.solutionSteps.forEach((s) => {
+                        let linesHtml = '';
+                        if (s.mathStepsLines && s.mathStepsLines.length > 0) {
+                            s.mathStepsLines.forEach(line => {
+                                linesHtml += `<p>• ${formatMathText(line)}</p>`;
+                            });
+                        } else if (s.description) {
+                            linesHtml = `<p>${formatMathText(s.description)}</p>`;
+                        }
+
+                        let stepSyms = '';
+                        if (s.stepSymbols && s.stepSymbols.length > 0) {
+                            s.stepSymbols.forEach(sym => {
+                                stepSyms += `<div>• $${cleanLatex(sym.symbol)}$ : ${formatMathText(sym.meaning)}</div>`;
+                            });
+                        }
+
+                        let linkBtn = '';
+                        if (s.formulaRefId) {
+                            linkBtn = `
+                                <button onclick="openFormulaModalById('${s.formulaRefId}')" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs px-2.5 py-1 rounded-lg font-semibold transition flex items-center gap-1 shadow-sm">
+                                    <span>🔗</span> ${s.formulaRefName || 'ดูสูตรอ้างอิง'}
+                                </button>
+                            `;
+                        }
+
+                        html += `
+                            <div class="bg-emerald-50/70 border border-emerald-200 rounded-xl p-4 grid grid-cols-1 md:grid-cols-12 gap-4">
+                                <div class="md:col-span-8 space-y-2">
+                                    <div class="flex items-center justify-between flex-wrap gap-2">
+                                        <span class="font-bold text-emerald-900 text-base">${formatMathText(s.stepTitle || 'ขั้นตอน')}</span>
+                                        ${linkBtn}
+                                    </div>
+                                    <div class="text-sm text-slate-800 space-y-1.5 font-sans leading-relaxed pt-1">
+                                        ${linesHtml}
+                                    </div>
+                                </div>
+                                <div class="md:col-span-4 bg-white/80 border border-emerald-200 rounded-lg p-3 text-xs space-y-1 text-emerald-950">
+                                    <div class="font-bold text-emerald-800 border-b border-emerald-200 pb-1 mb-1">🔤 ตัวย่อที่ใช้ในขั้นนี้:</div>
+                                    ${stepSyms || '<div>ไม่มีข้อมูลตัวย่อเฉพาะ</div>'}
+                                </div>
+                            </div>
+                        `;
+                    });
+
+                    html += `</div>`;
+                }
+
+                output.innerHTML = html;
+
+                // Reprocess MathJax Rendering
+                triggerMathJax([output, document.getElementById('top-diagram-container')]);
+                showToast('ประมวลผลและเรนเดอร์สื่อการสอนเรียบร้อย!');
+
+            } catch (e) {
+                showToast('เกิดข้อผิดพลาดในการอ่าน JSON กรุณาตรวจสอบรูปแบบไวยากรณ์', true);
+                console.error(e);
+            }
+        }
+    </script>
+</body>
+</html>
